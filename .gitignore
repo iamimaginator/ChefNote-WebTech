@@ -1,0 +1,10 @@
+# Ignore local server configurations
+.env
+config.php
+
+# Ignore user-specific uploads and avatars
+uploads/
+
+# Ignore system garbage files
+.DS_Store
+Thumbs.db
