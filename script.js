@@ -1,20 +1,20 @@
 const API = 'api.php';
 
-// Init
+// ── Init ──
 async function initApp() {
     loadTheme();
     loadProfile();
     setupAutoNumber('recipe-ingredients');
     setupAutoNumber('recipe-body');
-    
+
     const titleEl = document.getElementById('recipe-title');
     if (titleEl) {
-        titleEl.addEventListener('input', function() {
+        titleEl.addEventListener('input', function () {
             if (this.value.length > 0) {
-                const firstChar = this.value.charAt(0);
-                if (firstChar !== firstChar.toUpperCase()) {
+                const fc = this.value.charAt(0);
+                if (fc !== fc.toUpperCase()) {
                     const pos = this.selectionStart;
-                    this.value = firstChar.toUpperCase() + this.value.slice(1);
+                    this.value = fc.toUpperCase() + this.value.slice(1);
                     this.selectionStart = this.selectionEnd = pos;
                 }
             }
@@ -25,52 +25,86 @@ async function initApp() {
     loadVault();
 }
 
-// Theme toggle
+// ── Sidebar Toggle (Mobile) ──
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarBackdrop').classList.toggle('open');
+}
+
+// ── Settings Dropup ──
+function toggleSettings(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const menu = document.getElementById('settingsMenu');
+    menu.classList.toggle('open');
+}
+function closeSettings() {
+    document.getElementById('settingsMenu').classList.remove('open');
+}
+// Close settings when clicking outside
+document.addEventListener('click', function(e) {
+    const dropup = document.getElementById('settingsDropup');
+    if (dropup && !dropup.contains(e.target)) closeSettings();
+});
+
+// ── Theme Toggle ──
 function loadTheme() {
     const saved = localStorage.getItem('theme');
     if (saved === 'light') document.body.classList.add('light');
-    updateThemeIcon();
+    updateThemeUI();
 }
-
 function toggleTheme(e) {
     e.stopPropagation();
     document.body.classList.toggle('light');
     localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-    updateThemeIcon();
+    updateThemeUI();
 }
-
-function updateThemeIcon() {
+function updateThemeUI() {
+    const isLight = document.body.classList.contains('light');
     const icon = document.getElementById('theme-icon');
-    if (!icon) return;
-    icon.className = document.body.classList.contains('light') ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    if (icon) icon.className = isLight ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    const toggle = document.getElementById('theme-toggle');
+    if (toggle) {
+        if (isLight) toggle.classList.remove('active');
+        else toggle.classList.add('active');
+    }
 }
 
-// Tabs
+// ── Custom Modals ──
+function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// ── Tabs ──
 function showTab(id, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    document.querySelectorAll('#nav-tabs .nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(l => l.classList.remove('active'));
     if (el) el.classList.add('active');
+    // Close sidebar on mobile
+    if (window.innerWidth <= 768) toggleSidebar();
 }
 
-// Auto-number textareas
+// ── Auto-number textareas ──
 function setupAutoNumber(id) {
     const el = document.getElementById(id);
     if (!el) return;
 
     el.addEventListener('focus', function () {
-        if (!this.value.trim()) { this.value = '1. '; }
+        if (!this.value.trim()) this.value = '1. ';
     });
 
-    el.addEventListener('input', function(e) {
+    el.addEventListener('input', function () {
         const lines = this.value.split('\n');
         let changed = false;
         const newLines = lines.map(line => {
             const match = line.match(/^(\d+\.\s+)([a-z])(.*)/);
-            if (match) {
-                changed = true;
-                return match[1] + match[2].toUpperCase() + match[3];
-            }
+            if (match) { changed = true; return match[1] + match[2].toUpperCase() + match[3]; }
             return line;
         });
         if (changed) {
@@ -98,138 +132,7 @@ function setupAutoNumber(id) {
     });
 }
 
-// Save recipe
-async function saveRecipe() {
-    const title = document.getElementById('recipe-title').value.trim();
-    const ingredients = document.getElementById('recipe-ingredients').value.trim();
-    const instructions = document.getElementById('recipe-body').value.trim();
-    const time = document.getElementById('recipe-time').value.trim();
-    const mood = document.getElementById('recipe-mood').value;
-    if (!title || !time) return popToast('Fill in name and time');
-
-    try {
-        const res = await fetch(`${API}?action=create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, ingredients, instructions, time, mood })
-        });
-        const d = await res.json();
-        if (d.success) {
-            popToast('Saved: ' + title);
-            ['recipe-title', 'recipe-ingredients', 'recipe-body', 'recipe-time'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('recipe-mood').value = '';
-            loadVault();
-        } else popToast(d.error || 'Save failed');
-    } catch (e) { popToast('Network error'); }
-}
-
-// Load recipes
-let recipes = [];
-
-async function loadVault() {
-    try {
-        const res = await fetch(`${API}?action=read`);
-        recipes = await res.json();
-        renderGrid();
-        renderMini();
-    } catch (e) { }
-}
-
-function renderGrid() {
-    const el = document.getElementById('recipe-grid');
-    if (!recipes.length) { el.innerHTML = '<div class="col-12 text-center py-5 text-soft">No recipes yet.</div>'; return; }
-
-    el.innerHTML = recipes.map((r, i) => {
-        const ic = r.ingredients ? r.ingredients.split('\n').filter(l => l.trim()).length : 0;
-        const preview = r.instructions ? esc(r.instructions).substring(0, 90) + '…' : '';
-        const moodLabel = r.mood ? `<span class="badge-soft badge-mood ms-1">${moodEmoji(r.mood)}</span>` : '';
-        return `<div class="col-sm-6 col-lg-4">
-            <div class="recipe-card" onclick="openRecipe(${i})">
-                <h6>${esc(r.title)}</h6>
-                <span class="badge-soft badge-time">${esc(r.time)}</span>
-                ${ic ? `<span class="badge-soft badge-count ms-1">${ic} items</span>` : ''}
-                ${moodLabel}
-                ${preview ? `<p class="recipe-preview">${preview}</p>` : ''}
-            </div></div>`;
-    }).join('');
-}
-
-function moodEmoji(mood) {
-    const map = { tired: '😴', happy: '😄', stressed: '😤', adventurous: '🤠', lazy: '🛋️', romantic: '💕' };
-    return (map[mood] || '') + ' ' + (mood ? mood.charAt(0).toUpperCase() + mood.slice(1) : '');
-}
-
-function renderMini() {
-    const el = document.getElementById('mini-list');
-    if (!recipes.length) { el.innerHTML = '<p class="text-soft" style="font-size:.8rem">Nothing yet.</p>'; return; }
-    el.innerHTML = recipes.slice(0, 6).map((r, i) =>
-        `<div class="mini-item" onclick="openRecipe(${i})">${esc(r.title)}</div>`
-    ).join('');
-}
-
-// Recipe modal
-function openRecipe(i) { showRecipeModal(recipes[i]); }
-
-let activeRecipeInModal = null;
-
-function showRecipeModal(r) {
-    if (!r) return;
-    activeRecipeInModal = r; // Keep track of active item reference
-
-    document.getElementById('recipeModalLabel').textContent = r.title;
-    document.getElementById('modal-time').textContent = r.time || '—';
-
-    const moodBadge = document.getElementById('modal-mood-badge');
-    moodBadge.innerHTML = r.mood ? `<span class="badge-soft badge-mood">${moodEmoji(r.mood)}</span>` : '';
-
-    const ing = document.getElementById('modal-ingredients');
-    ing.innerHTML = r.ingredients?.trim()
-        ? '<ul>' + r.ingredients.split('\n').filter(l => l.trim()).map(l => `<li>${esc(l.trim())}</li>`).join('') + '</ul>'
-        : '<p class="text-soft">None listed.</p>';
-
-    const ins = document.getElementById('modal-instructions');
-    ins.innerHTML = r.instructions?.trim()
-        ? r.instructions.split('\n').filter(l => l.trim()).map(s => `<p style="margin-bottom:.4rem">${esc(s.trim())}</p>`).join('')
-        : '<p class="text-soft">None provided.</p>';
-
-    // Set up Edit & Delete visibility rules
-    const editBtn = document.getElementById('modal-edit-btn');
-    const deleteBtn = document.getElementById('modal-delete-btn');
-
-    if (r.id) {
-        // User Collection Recipe from DB
-        editBtn.style.display = "inline-block";
-        deleteBtn.style.display = "inline-block";
-        editBtn.onclick = () => triggerEditMode(r);
-        deleteBtn.onclick = () => confirmDeleteRecipe(r.id);
-    } else {
-        // Pre-loaded Template Mood Lab Item (Static)
-        editBtn.style.display = "none";
-        deleteBtn.style.display = "none";
-    }
-
-    new bootstrap.Modal(document.getElementById('recipeModal')).show();
-}
-
-// Redirects recipe values back to dashboard entry forms for customization updates
-function triggerEditMode(recipe) {
-    bootstrap.Modal.getInstance(document.getElementById('recipeModal')).hide();
-    showTab('home', document.getElementById('nav-home'));
-
-    // Populate input values
-    document.getElementById('recipe-title').value = recipe.title;
-    document.getElementById('recipe-ingredients').value = recipe.ingredients;
-    document.getElementById('recipe-body').value = recipe.instructions;
-    document.getElementById('recipe-time').value = recipe.time.replace(' Mins', '');
-    document.getElementById('recipe-mood').value = recipe.mood;
-
-    // Change "Save Recipe" button action context temporarily to handle Updates instead of standard Creations
-    const saveBtn = document.querySelector("button[onclick='saveRecipe()']");
-    saveBtn.textContent = "Update Recipe Changes";
-    saveBtn.setAttribute("onclick", `saveRecipe(${recipe.id})`);
-}
-
-// Rewriting saveRecipe to handle BOTH creation insertions and updates using optional parameters
+// ── Save Recipe ──
 async function saveRecipe(editId = null) {
     const title = document.getElementById('recipe-title').value.trim();
     const ingredients = document.getElementById('recipe-ingredients').value.trim();
@@ -251,36 +154,138 @@ async function saveRecipe(editId = null) {
         const d = await res.json();
         if (d.success) {
             popToast(editId ? 'Recipe Updated!' : 'Saved: ' + title);
-
-            // Clean interface up
             ['recipe-title', 'recipe-ingredients', 'recipe-body', 'recipe-time'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('recipe-mood').value = '';
 
-            // Reset button behaviors
+            // Reset save button
             const saveBtn = document.querySelector("button[onclick^='saveRecipe']");
-            saveBtn.textContent = "Save Recipe";
-            saveBtn.setAttribute("onclick", "saveRecipe()");
-
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="bi bi-save"></i> Save Recipe';
+                saveBtn.setAttribute('onclick', 'saveRecipe()');
+            }
             loadVault();
         } else popToast(d.error || 'Operation failed');
     } catch (e) { popToast('Network connection error'); }
 }
 
-// Deletion client routing interface
+// ── Load Recipes ──
+let recipes = [];
+
+async function loadVault() {
+    try {
+        const res = await fetch(`${API}?action=read`);
+        recipes = await res.json();
+        renderGrid();
+        renderMini();
+    } catch (e) { }
+}
+
+function renderGrid() {
+    const el = document.getElementById('recipe-grid');
+    if (!recipes.length) { el.innerHTML = '<div class="text-soft" style="text-align:center;padding:48px 0">No recipes yet. Head to Kitchen to create one.</div>'; return; }
+
+    el.innerHTML = recipes.map((r, i) => {
+        const ic = r.ingredients ? r.ingredients.split('\n').filter(l => l.trim()).length : 0;
+        const preview = r.instructions ? esc(r.instructions).substring(0, 90) + '…' : '';
+        const moodLabel = r.mood ? `<span class="badge-soft badge-mood">${moodEmoji(r.mood)}</span>` : '';
+        return `<div class="recipe-card" onclick="openRecipe(${i})">
+            <h6>${esc(r.title)}</h6>
+            <span class="badge-soft badge-time">${esc(r.time)}</span>
+            ${ic ? `<span class="badge-soft badge-count" style="margin-left:4px">${ic} items</span>` : ''}
+            ${moodLabel ? `<span style="margin-left:4px">${moodLabel}</span>` : ''}
+            ${preview ? `<p class="recipe-preview">${preview}</p>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function moodEmoji(mood) {
+    const map = { tired: '😴', happy: '😄', stressed: '😤', adventurous: '🤠', lazy: '🛋️', romantic: '💕' };
+    return (map[mood] || '') + ' ' + (mood ? mood.charAt(0).toUpperCase() + mood.slice(1) : '');
+}
+
+function renderMini() {
+    const el = document.getElementById('mini-list');
+    if (!recipes.length) { el.innerHTML = '<p class="text-soft" style="font-size:.8rem">Nothing yet.</p>'; return; }
+    el.innerHTML = recipes.slice(0, 5).map((r, i) =>
+        `<div class="mini-item" onclick="openRecipe(${i})">
+            <div><strong>${esc(r.title)}</strong></div>
+            <span class="mini-arrow"><i class="bi bi-chevron-right"></i></span>
+        </div>`
+    ).join('');
+}
+
+// ── Recipe Modal ──
+function openRecipe(i) { showRecipeModal(recipes[i]); }
+
+let activeRecipeInModal = null;
+
+function showRecipeModal(r) {
+    if (!r) return;
+    activeRecipeInModal = r;
+
+    document.getElementById('recipeModalLabel').textContent = r.title;
+    document.getElementById('modal-time').textContent = r.time || '—';
+
+    const moodBadge = document.getElementById('modal-mood-badge');
+    moodBadge.innerHTML = r.mood ? `<span class="badge-soft badge-mood">${moodEmoji(r.mood)}</span>` : '';
+
+    const ing = document.getElementById('modal-ingredients');
+    ing.innerHTML = r.ingredients?.trim()
+        ? '<ul>' + r.ingredients.split('\n').filter(l => l.trim()).map(l => `<li>${esc(l.trim())}</li>`).join('') + '</ul>'
+        : '<p class="text-soft">None listed.</p>';
+
+    const ins = document.getElementById('modal-instructions');
+    ins.innerHTML = r.instructions?.trim()
+        ? r.instructions.split('\n').filter(l => l.trim()).map(s => `<p style="margin-bottom:.4rem;font-size:.86rem">${esc(s.trim())}</p>`).join('')
+        : '<p class="text-soft">None provided.</p>';
+
+    const editBtn = document.getElementById('modal-edit-btn');
+    const deleteBtn = document.getElementById('modal-delete-btn');
+
+    if (r.id) {
+        editBtn.style.display = 'inline-flex';
+        deleteBtn.style.display = 'inline-flex';
+        editBtn.onclick = () => triggerEditMode(r);
+        deleteBtn.onclick = () => confirmDeleteRecipe(r.id);
+    } else {
+        editBtn.style.display = 'none';
+        deleteBtn.style.display = 'none';
+    }
+
+    openModal('recipeModal');
+}
+
+function triggerEditMode(recipe) {
+    closeModal('recipeModal');
+    showTab('home', document.getElementById('nav-home'));
+
+    document.getElementById('recipe-title').value = recipe.title;
+    document.getElementById('recipe-ingredients').value = recipe.ingredients;
+    document.getElementById('recipe-body').value = recipe.instructions;
+    document.getElementById('recipe-time').value = recipe.time.replace(' Mins', '');
+    document.getElementById('recipe-mood').value = recipe.mood;
+
+    const saveBtn = document.querySelector("button[onclick^='saveRecipe']");
+    if (saveBtn) {
+        saveBtn.innerHTML = '<i class="bi bi-save"></i> Update Recipe';
+        saveBtn.setAttribute('onclick', `saveRecipe(${recipe.id})`);
+    }
+}
+
 async function confirmDeleteRecipe(id) {
-    if (!confirm("Are you sure you want to permanently delete this recipe?")) return;
+    if (!confirm('Are you sure you want to permanently delete this recipe?')) return;
     try {
         const res = await fetch(`${API}?action=delete_recipe&id=${id}`);
         const d = await res.json();
         if (d.success) {
-            popToast("Recipe Deleted.");
-            bootstrap.Modal.getInstance(document.getElementById('recipeModal')).hide();
+            popToast('Recipe Deleted.');
+            closeModal('recipeModal');
             loadVault();
-        } else popToast(d.error || "Could not delete");
-    } catch (e) { popToast("Network error"); }
+        } else popToast(d.error || 'Could not delete');
+    } catch (e) { popToast('Network error'); }
 }
 
-// Mood Lab
+// ── Mood Lab ──
 const moods = {
     tired: [
         { title: '🍳 Quick Cheese Omelet', desc: 'Fluffy, fast, and filling.', time: '5 Mins', ingredients: '1. Eggs\n2. Butter\n3. Cheddar\n4. Salt\n5. Pepper', instructions: '1. Whisk eggs.\n2. Melt butter in pan.\n3. Pour eggs, add cheese.\n4. Fold and serve.' },
@@ -317,19 +322,24 @@ const moods = {
 function selectMood(el) {
     document.querySelectorAll('.mood-pill').forEach(p => p.classList.remove('selected'));
     el.classList.add('selected');
-    const list = moods[el.dataset.mood];
+    const mood = el.dataset.mood;
+    const list = moods[mood];
     if (!list) return;
 
-    // Also show matching DB recipes
-    const dbMatches = recipes.filter(r => r.mood === el.dataset.mood);
+    const dbMatches = recipes.filter(r => r.mood === mood);
+    const emoji = { tired: '😴', happy: '😄', stressed: '😤', adventurous: '🤠', lazy: '🛋️', romantic: '💕' };
 
-    let html = '<div class="mood-row">';
-    html += list.map((r, i) => `<div class="mood-card" onclick='openMoodRecipe("${el.dataset.mood}",${i})'>
+    let html = `<div class="mood-heading">
+        <h3>Curated for ${emoji[mood] || ''} ${mood.charAt(0).toUpperCase() + mood.slice(1)}</h3>
+    </div>`;
+
+    html += '<div class="mood-grid">';
+    html += list.map((r, i) => `<div class="mood-card" onclick='openMoodRecipe("${mood}",${i})'>
         <h6>${r.title}</h6><p>${r.desc}</p>
         <span class="badge-soft badge-time">${r.time}</span>
     </div>`).join('');
 
-    dbMatches.forEach((r, i) => {
+    dbMatches.forEach(r => {
         const idx = recipes.indexOf(r);
         html += `<div class="mood-card" onclick="openRecipe(${idx})">
             <h6>📌 ${esc(r.title)}</h6><p class="text-soft">From your collection</p>
@@ -343,19 +353,19 @@ function selectMood(el) {
 
 function openMoodRecipe(mood, i) { showRecipeModal(moods[mood][i]); }
 
-// AI Chat
+// ── AI Chat ──
 async function sendAI() {
     const input = document.getElementById('ai-input');
     const msg = input.value.trim();
     if (!msg) return;
 
     const box = document.getElementById('ai-messages');
-    box.innerHTML += `<div class="msg msg-user"><div class="msg-avatar">👤</div><div class="msg-bubble">${esc(msg)}</div></div>`;
+    box.innerHTML += `<div class="msg msg-user"><div class="msg-avatar"><i class="bi bi-person-fill"></i></div><div class="msg-bubble">${esc(msg)}</div></div>`;
     input.value = '';
     scrollChat();
 
     const tid = 'typing-' + Date.now();
-    box.innerHTML += `<div class="msg msg-bot typing" id="${tid}"><div class="msg-avatar">🤖</div><div class="msg-bubble">Thinking</div></div>`;
+    box.innerHTML += `<div class="msg msg-bot typing" id="${tid}"><div class="msg-avatar"><i class="bi bi-robot"></i></div><div class="msg-bubble">Thinking</div></div>`;
     scrollChat();
 
     try {
@@ -365,16 +375,60 @@ async function sendAI() {
         });
         const d = await res.json();
         document.getElementById(tid)?.remove();
-        addBot(d.error ? '⚠️ ' + d.error : formatAI(d.reply));
+        addBot(d.error ? '⚠️ ' + d.error : formatAI(d.reply), d.error ? '' : d.reply);
     } catch (e) {
         document.getElementById(tid)?.remove();
         addBot('Could not reach the AI.');
     }
 }
 
-function addBot(html) {
-    document.getElementById('ai-messages').innerHTML += `<div class="msg msg-bot"><div class="msg-avatar">🤖</div><div class="msg-bubble">${html}</div></div>`;
+function addBot(html, rawText = '') {
+    let saveBtn = '';
+    if (rawText && rawText.toLowerCase().includes('ingredients') && rawText.toLowerCase().includes('instructions')) {
+        saveBtn = `<br><button onclick="parseAndEditAI(this)" style="display:inline-flex; align-items:center; gap:6px; background:var(--rose-light); color:var(--rose); border:1px solid rgba(201,120,110,0.12); border-radius:20px; padding:6px 14px; font-size:.78rem; font-weight:600; margin-top:10px; cursor:pointer; transition:all var(--ease);"><i class="bi bi-save"></i> Save to Kitchen</button>`;
+    }
+    document.getElementById('ai-messages').innerHTML += `<div class="msg msg-bot" data-raw="${esc(rawText)}"><div class="msg-avatar"><i class="bi bi-robot"></i></div><div class="msg-bubble">${html}${saveBtn}</div></div>`;
     scrollChat();
+}
+
+function parseAndEditAI(btn) {
+    const msgDiv = btn.closest('.msg-bot');
+    const rawText = msgDiv.getAttribute('data-raw');
+    if (!rawText) return;
+
+    let title = '';
+    let ingredients = '';
+    let instructions = '';
+
+    const titleMatch = rawText.match(/Title:\s*(.+)/i);
+    if (titleMatch) title = titleMatch[1].trim();
+
+    const ingMatch = rawText.match(/Ingredients:([\s\S]*?)(Instructions:|$)/i);
+    if (ingMatch) {
+        ingredients = ingMatch[1].trim()
+            .split('\n')
+            .map(line => line.replace(/^-\s*/, '• ').trim())
+            .filter(line => line.length > 0)
+            .join('\n');
+    }
+
+    const instMatch = rawText.match(/Instructions:([\s\S]*)/i);
+    if (instMatch) {
+        instructions = instMatch[1].trim()
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join('\n');
+    }
+
+    showTab('home', document.getElementById('nav-home'));
+
+    if (title) document.getElementById('recipe-title').value = title;
+    if (ingredients) document.getElementById('recipe-ingredients').value = ingredients;
+    if (instructions) document.getElementById('recipe-body').value = instructions;
+    document.getElementById('recipe-time').value = '30 Mins'; 
+
+    popToast('Recipe loaded into Kitchen! Review and click Save.');
 }
 
 function scrollChat() {
@@ -394,17 +448,12 @@ function formatAI(text) {
     return h;
 }
 
-// Profile
+// ── Profile ──
 async function loadProfile() {
     try {
         const res = await fetch(`${API}?action=get_profile`);
         const d = await res.json();
-        if (d.avatar) {
-            const img = document.getElementById('nav-avatar');
-            img.src = 'uploads/' + d.avatar;
-            img.style.display = 'inline';
-            document.getElementById('nav-avatar-icon').style.display = 'none';
-        }
+        // No longer updating sidebar avatar since it was removed
     } catch (e) { }
 }
 
@@ -418,7 +467,7 @@ function openEditProfile() {
             img.style.display = 'block';
             document.getElementById('profile-avatar-icon').style.display = 'none';
         }
-        new bootstrap.Modal(document.getElementById('profileModal')).show();
+        openModal('profileModal');
     });
 }
 
@@ -447,14 +496,7 @@ async function saveProfile() {
         const d = await res.json();
         if (d.success) {
             popToast('Profile updated');
-            document.getElementById('nav-username').textContent = d.user.full_name;
-            if (d.user.avatar) {
-                const img = document.getElementById('nav-avatar');
-                img.src = 'uploads/' + d.user.avatar + '?t=' + Date.now();
-                img.style.display = 'inline';
-                document.getElementById('nav-avatar-icon').style.display = 'none';
-            }
-            bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+            closeModal('profileModal');
         } else popToast(d.error || 'Update failed');
     } catch (e) { popToast('Network error'); }
 }
@@ -468,11 +510,9 @@ async function deleteAccount() {
     } catch (e) { popToast('Error'); }
 }
 
-function openAbout() {
-    new bootstrap.Modal(document.getElementById('aboutModal')).show();
-}
+function openAbout() { openModal('aboutModal'); }
 
-// Helpers
+// ── Helpers ──
 function popToast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg;

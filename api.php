@@ -1,7 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=UTF-8');
 require_once 'db.php';
-require_once 'config.php';
 
 // Enforce login for all operational actions
 if (!isset($_SESSION['user_id'])) { 
@@ -10,11 +9,10 @@ if (!isset($_SESSION['user_id'])) {
     exit; 
 }
 
-
 $uid = $_SESSION['user_id'];
 
-// Environment Config
-$GROQ_KEY = 'YOUR_GROQ_API_KEY_HERE'; 
+// Environment Config (Move key here out of the switch block)
+$GROQ_KEY = 'Your GROK API here'; 
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
@@ -79,6 +77,16 @@ switch ($action) {
         $q->close();
         break;
 
+    case 'toggle_favorite':
+        $id = intval($_GET['id'] ?? 0);
+        if (!$id) { http_response_code(400); echo json_encode(['error'=>'Invalid ID']); exit; }
+        
+        $q = $conn->prepare("UPDATE recipes SET is_favorite = NOT is_favorite WHERE id=? AND user_id=?");
+        $q->bind_param('ii', $id, $uid);
+        echo json_encode($q->execute() ? ['success'=>true] : ['error'=>'Update failed.']);
+        $q->close();
+        break;
+
     case 'ai':
         $in = json_decode(file_get_contents('php://input'), true);
         $msg = trim($in['message'] ?? '');
@@ -87,7 +95,7 @@ switch ($action) {
         $payload = json_encode([
             'model' => 'llama-3.3-70b-versatile',
             'messages' => [
-                ['role'=>'system','content'=>'You are ChefNote AI, a friendly cooking assistant. Give concise, practical advice about recipes, techniques, substitutions, and meal planning. Use numbered steps for recipes.'],
+                ['role'=>'system','content'=>'You are ChefNote AI, a friendly cooking assistant. Give concise, practical advice. CRITICAL: When providing a recipe, use this exact format to allow automatic saving:\nTitle: [Recipe Name]\nIngredients:\n- [Item 1]\n- [Item 2]\nInstructions:\n1. [Step 1]\n2. [Step 2]'],
                 ['role'=>'user','content'=>$msg]
             ],
             'temperature' => 0.7,

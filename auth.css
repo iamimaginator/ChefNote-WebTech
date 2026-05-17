@@ -1,153 +1,106 @@
-/* ChefNote Auth — Dark default, matches dashboard */
+/* ChefNote Auth — Culinary Noir */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
-* {
-    font-family: 'Poppins', sans-serif;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+:root {
+    --bg: #0E1110;
+    --surface: #1A1E1C;
+    --border: rgba(255,255,255,0.06);
+    --border-green: rgba(80,130,90,0.18);
+    --text: #E8E6E1;
+    --text-soft: #7A7E7B;
+    --rose: #C9786E;
+    --rose-glow: rgba(201,120,110,0.06);
 }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
     min-height: 100vh;
-    background: #0F0F10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--bg);
+    font-family: 'Poppins', sans-serif;
+    display: flex; align-items: center; justify-content: center;
 }
 
 .auth-card {
-    width: 100%;
-    max-width: 400px;
-    margin: 20px;
-    background: #1E1E1F;
-    border: 1px solid #2C2C2D;
+    width: 100%; max-width: 400px; margin: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border-green);
     border-radius: 20px;
     padding: 44px 36px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, .3);
+    box-shadow: 0 16px 48px rgba(0,0,0,.35);
 }
 
 .auth-logo {
-    text-align: center;
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-    color: #e8e6e1;
+    text-align: center; font-size: 1.6rem;
+    font-weight: 700; margin-bottom: 6px; color: var(--text);
 }
-
-.auth-logo span {
-    color: #E60023;
-}
+.auth-logo span { color: var(--rose); }
 
 .auth-title {
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.3rem;
-    color: #e8e6e1;
-    margin-bottom: 2px;
+    text-align: center; font-family: 'Playfair Display', serif;
+    font-weight: 600; font-size: 1.4rem; color: var(--text); margin-bottom: 2px;
 }
 
 .auth-sub {
-    text-align: center;
-    font-size: .82rem;
-    color: rgba(255, 255, 255, .38);
-    margin-bottom: 24px;
+    text-align: center; font-size: .82rem;
+    color: var(--text-soft); margin-bottom: 24px;
 }
 
-.auth-field {
-    position: relative;
-    margin-bottom: 14px;
-}
+.auth-field { position: relative; margin-bottom: 14px; }
 
 .auth-field i {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, .2);
-    font-size: .9rem;
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%); color: rgba(255,255,255,0.18); font-size: .9rem;
 }
 
 .auth-field input {
-    width: 100%;
-    padding: 12px 14px 12px 40px;
-    background: rgba(255, 255, 255, .04);
-    border: 1px solid rgba(255, 255, 255, .07);
-    border-radius: 12px;
-    color: #e8e6e1;
-    font-size: .88rem;
-    outline: none;
-    transition: border-color .2s;
+    width: 100%; padding: 12px 14px 12px 40px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-size: .88rem; font-family: 'Poppins', sans-serif;
+    outline: none; transition: border-color .2s;
 }
 
-.auth-field input::placeholder {
-    color: rgba(255, 255, 255, .2);
-}
-
+.auth-field input::placeholder { color: rgba(255,255,255,0.18); }
 .auth-field input:focus {
-    border-color: #E60023;
-    box-shadow: 0 0 0 3px rgba(230, 0, 35, .1);
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px var(--rose-glow);
 }
 
 .auth-btn {
-    width: 100%;
-    padding: 13px;
-    margin-top: 6px;
-    border: none;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: .9rem;
-    cursor: pointer;
-    color: #fff;
-    background: #E60023;
-    transition: background .2s;
+    width: 100%; padding: 13px; margin-top: 6px;
+    border: none; border-radius: 12px;
+    font-weight: 600; font-size: .9rem; cursor: pointer;
+    color: #fff; font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, var(--rose), #a5605a);
+    transition: filter .2s;
 }
-
-.auth-btn:hover {
-    filter: brightness(1.1);
-}
+.auth-btn:hover { filter: brightness(1.12); }
 
 .auth-footer {
-    text-align: center;
-    margin-top: 20px;
-    font-size: .82rem;
-    color: rgba(255, 255, 255, .35);
+    text-align: center; margin-top: 20px;
+    font-size: .82rem; color: var(--text-soft);
 }
-
-.auth-footer a {
-    color: #E60023;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.auth-footer a:hover {
-    color: #B3001B;
-}
+.auth-footer a { color: var(--rose); text-decoration: none; font-weight: 600; }
+.auth-footer a:hover { filter: brightness(1.15); }
 
 .auth-alert {
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: .82rem;
-    margin-bottom: 16px;
+    padding: 10px 14px; border-radius: 10px;
+    font-size: .82rem; margin-bottom: 16px;
 }
-
 .auth-alert-error {
-    background: rgba(230, 0, 35, .1);
-    border: 1px solid rgba(230, 0, 35, .2);
-    color: #E60023;
+    background: rgba(220,53,69,.08);
+    border: 1px solid rgba(220,53,69,.15); color: #e05263;
 }
-
 .auth-alert-success {
-    background: rgba(16, 185, 129, .1);
-    border: 1px solid rgba(16, 185, 129, .2);
-    color: #10B981;
+    background: rgba(16,185,129,.08);
+    border: 1px solid rgba(16,185,129,.15); color: #10B981;
 }
 
-/* Autofill Fix for auth */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #1E1E1F inset !important;
-    -webkit-text-fill-color: #e8e6e1 !important;
+input:-webkit-autofill, input:-webkit-autofill:hover,
+input:-webkit-autofill:focus, input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--surface) inset !important;
+    -webkit-text-fill-color: var(--text) !important;
     transition: background-color 5000s ease-in-out 0s;
 }

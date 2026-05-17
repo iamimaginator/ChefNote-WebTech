@@ -39,3 +39,4 @@ if ($result->num_rows == 0) {
 }
 
 $conn->query("ALTER TABLE recipes ADD COLUMN IF NOT EXISTS mood VARCHAR(50) DEFAULT ''");
+$conn->query("ALTER TABLE recipes ADD COLUMN IF NOT EXISTS is_favorite TINYINT(1) DEFAULT 0");
