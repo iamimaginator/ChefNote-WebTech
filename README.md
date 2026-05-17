@@ -57,7 +57,7 @@ The system is built on a **local-first architecture**, ensuring that core recipe
 ├── auth.css            # Scoped styles for authentication views
 │
 └── /uploads            # Secure directory for validated user avatars
-
+```
 
 
 ## 🚀 Installation & Setup
