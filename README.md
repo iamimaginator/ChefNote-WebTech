@@ -1,6 +1,6 @@
 # 🍳 ChefNote
 
-![ChefNote Banner](https://img.shields.io/badge/Status-Active-success) ![Version](https://img.shields.io/badge/Version-1.0.0-blue) ![PHP](https://img.shields.io/badge/PHP-Backend-777BB4?logo=php&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql&logoColor=white) ![Groq](https://img.shields.io/badge/Groq-AI_Integration-f55036)
+![ChefNote Banner](https://img.shields.io/badge/Status-Active-success) ![Version](https://img.shields.io/badge/Version-2.0.0-blue) ![PHP](https://img.shields.io/badge/PHP-Backend-777BB4?logo=php&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql&logoColor=white) ![Groq](https://img.shields.io/badge/Groq-AI_Integration-f55036)
 
 **ChefNote** is a full-stack, AI-powered recipe management application. Engineered with a modular backend and a custom "Culinary Noir" interface, it provides a seamless environment for writing, storing, and discovering culinary creations. 
 
