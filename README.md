@@ -89,6 +89,22 @@ Locate the $GROQ_KEY variable and insert your active Groq API key:
 
 Navigate to the project directory in your local server (e.g., http://localhost/chefnote/login.php).
 
+### Option B: Live Deployment (InfinityFree Production)
+
+This application supports live deployment on shared hosting environments like InfinityFree without breaking the local-first architecture. 
+
+**1. Database Connection Changes**
+When migrating to production, update the connection parameters in your database configuration file to match the remote host. Standard `localhost` credentials must be replaced with the InfinityFree specific variables:
+* `Host`: Provided SQL hostname (e.g., `sqlXXX.infinityfree.com`)
+* `Database Name`: Provided remote database name
+* `Username`: Provided remote database user
+* `Password`: Provided database password
+
+**2. api.php Environment Variable Workaround**
+Shared hosting platforms frequently restrict or disable standard server environment variables (`$_ENV`). To circumvent this for the API endpoints:
+* Do not rely on standard `.env` parsing libraries.
+* Utilize a tracked `config.php` file with fallback logic, or define configuration constants directly within `api.php` to handle the production routing and database credentials.
+
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome. Feel free to check the issues page if you want to contribute.
 
