@@ -2,6 +2,12 @@ const API = 'api.php';
 
 // ── Init ──
 async function initApp() {
+    // NEW: Register Service Worker for Offline PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Service Worker Registered!'))
+            .catch((err) => console.log('SW Registration failed:', err));
+    }
     loadTheme();
     loadProfile();
     setupAutoNumber('recipe-ingredients');
@@ -139,22 +145,40 @@ async function saveRecipe(editId = null) {
     const instructions = document.getElementById('recipe-body').value.trim();
     const time = document.getElementById('recipe-time').value.trim();
     const mood = document.getElementById('recipe-mood').value;
+    
+    // Grab the image file
+    const imageInput = document.getElementById('recipe-image');
+    const imageFile = imageInput ? imageInput.files[0] : null;
+
     if (!title || !time) return popToast('Fill in name and time');
 
     const url = editId ? `${API}?action=update_recipe` : `${API}?action=create`;
-    const bodyData = { title, ingredients, instructions, time, mood };
-    if (editId) bodyData.id = editId;
+    
+    // Use FormData instead of JSON so we can send the image file
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('ingredients', ingredients);
+    formData.append('instructions', instructions);
+    formData.append('time', time);
+    formData.append('mood', mood);
+    if (editId) formData.append('id', editId);
+    if (imageFile) formData.append('cover_image', imageFile);
 
     try {
         const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bodyData)
+            body: formData // The browser automatically sets the correct hidden headers for files!
         });
         const d = await res.json();
+        
         if (d.success) {
             popToast(editId ? 'Recipe Updated!' : 'Saved: ' + title);
-            ['recipe-title', 'recipe-ingredients', 'recipe-body', 'recipe-time'].forEach(id => document.getElementById(id).value = '');
+            
+            // Clear all fields including the image input
+            ['recipe-title', 'recipe-ingredients', 'recipe-body', 'recipe-time', 'recipe-image'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
             document.getElementById('recipe-mood').value = '';
 
             // Reset save button
@@ -222,6 +246,16 @@ let activeRecipeInModal = null;
 function showRecipeModal(r) {
     if (!r) return;
     activeRecipeInModal = r;
+    
+    // --- NEW IMAGE DISPLAY LOGIC ---
+    const imgEl = document.getElementById('modal-cover-image');
+    if (r.image_url) {
+        imgEl.src = r.image_url;
+        imgEl.style.display = 'block';
+    } else {
+        imgEl.src = '';
+        imgEl.style.display = 'none';
+    }
 
     document.getElementById('recipeModalLabel').textContent = r.title;
     document.getElementById('modal-time').textContent = r.time || '—';

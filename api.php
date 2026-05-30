@@ -12,25 +12,43 @@ if (!isset($_SESSION['user_id'])) {
 $uid = $_SESSION['user_id'];
 
 // Environment Config (Move key here out of the switch block)
-$GROQ_KEY = 'Your GROK API here'; 
+$GROQ_KEY = 'YOUR API HERE'; 
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
     case 'create':
-        $in = json_decode(file_get_contents('php://input'), true);
-        $t = trim($in['title'] ?? '');
-        $g = trim($in['ingredients'] ?? '');
-        $s = trim($in['instructions'] ?? '');
-        $m = trim($in['time'] ?? '');
-        $mood = trim($in['mood'] ?? '');
+        // Now using $_POST since we are sending FormData
+        $t = trim($_POST['title'] ?? '');
+        $g = trim($_POST['ingredients'] ?? '');
+        $s = trim($_POST['instructions'] ?? '');
+        $m = trim($_POST['time'] ?? '');
+        $mood = trim($_POST['mood'] ?? '');
 
         if ($m && !preg_match('/min/i', $m)) $m .= ' Mins';
         if (!$t || !$m) { http_response_code(400); echo json_encode(['error'=>'Title and time required.']); exit; }
 
-        // Securely bound to current user
-        $q = $conn->prepare("INSERT INTO recipes (user_id, title, ingredients, instructions, time, mood) VALUES (?, ?, ?, ?, ?, ?)");
-        $q->bind_param('isssss', $uid, $t, $g, $s, $m, $mood);
+        // --- NEW IMAGE UPLOAD LOGIC ---
+        $image_url = null;
+        if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['cover_image']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg','jpeg','png','webp'])) {
+                $mime = mime_content_type($_FILES['cover_image']['tmp_name']);
+                if (strpos($mime, 'image/') === 0) {
+                    if (!is_dir('uploads/recipes')) mkdir('uploads/recipes', 0755, true);
+                    $fname = 'recipe_'.$uid.'_'.time().'.'.$ext;
+                    $dest = 'uploads/recipes/'.$fname;
+                    if (move_uploaded_file($_FILES['cover_image']['tmp_name'], $dest)) {
+                        $image_url = $dest;
+                    }
+                }
+            }
+        }
+        // ------------------------------
+
+        // Securely bound to current user (Now includes image_url)
+        $q = $conn->prepare("INSERT INTO recipes (user_id, title, ingredients, instructions, time, mood, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $q->bind_param('issssss', $uid, $t, $g, $s, $m, $mood, $image_url);
         echo json_encode($q->execute() ? ['success'=>true, 'id'=>$q->insert_id] : ['error'=>'Save failed.']);
         $q->close();
         break;
@@ -48,20 +66,47 @@ switch ($action) {
         break;
 
     case 'update_recipe':
-        $in = json_decode(file_get_contents('php://input'), true);
-        $id = intval($in['id'] ?? 0);
-        $t = trim($in['title'] ?? '');
-        $g = trim($in['ingredients'] ?? '');
-        $s = trim($in['instructions'] ?? '');
-        $m = trim($in['time'] ?? '');
-        $mood = trim($in['mood'] ?? '');
+        // Now using $_POST since we are sending FormData
+        $id = intval($_POST['id'] ?? 0);
+        $t = trim($_POST['title'] ?? '');
+        $g = trim($_POST['ingredients'] ?? '');
+        $s = trim($_POST['instructions'] ?? '');
+        $m = trim($_POST['time'] ?? '');
+        $mood = trim($_POST['mood'] ?? '');
 
         if ($m && !preg_match('/min/i', $m)) $m .= ' Mins';
         if (!$id || !$t || !$m) { http_response_code(400); echo json_encode(['error'=>'Missing data.']); exit; }
 
+        // --- NEW IMAGE UPLOAD LOGIC ---
+        $image_url = null;
+        $image_update_sql = ""; // Only update image if a new one is uploaded
+        
+        if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['cover_image']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg','jpeg','png','webp'])) {
+                $mime = mime_content_type($_FILES['cover_image']['tmp_name']);
+                if (strpos($mime, 'image/') === 0) {
+                    if (!is_dir('uploads/recipes')) mkdir('uploads/recipes', 0755, true);
+                    $fname = 'recipe_'.$uid.'_'.time().'.'.$ext;
+                    $dest = 'uploads/recipes/'.$fname;
+                    if (move_uploaded_file($_FILES['cover_image']['tmp_name'], $dest)) {
+                        $image_url = $dest;
+                        $image_update_sql = ", image_url=?";
+                    }
+                }
+            }
+        }
+        // ------------------------------
+
         // Verifies the recipe belongs to this user before updating
-        $q = $conn->prepare("UPDATE recipes SET title=?, ingredients=?, instructions=?, time=?, mood=? WHERE id=? AND user_id=?");
-        $q->bind_param('sssssii', $t, $g, $s, $m, $mood, $id, $uid);
+        if ($image_url) {
+            $q = $conn->prepare("UPDATE recipes SET title=?, ingredients=?, instructions=?, time=?, mood=? $image_update_sql WHERE id=? AND user_id=?");
+            $q->bind_param('ssssssii', $t, $g, $s, $m, $mood, $image_url, $id, $uid);
+        } else {
+            $q = $conn->prepare("UPDATE recipes SET title=?, ingredients=?, instructions=?, time=?, mood=? WHERE id=? AND user_id=?");
+            $q->bind_param('sssssii', $t, $g, $s, $m, $mood, $id, $uid);
+        }
+        
         echo json_encode($q->execute() ? ['success'=>true] : ['error'=>'Update failed.']);
         $q->close();
         break;

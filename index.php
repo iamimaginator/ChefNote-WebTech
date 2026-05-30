@@ -9,6 +9,8 @@ $user = htmlspecialchars($_SESSION['user_name'] ?? 'Chef');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChefNote | SP24-BCS-061</title>
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22ChefNote%22%2C%22short_name%22%3A%22ChefNote%22%2C%22start_url%22%3A%22.%2Findex.php%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23c9786e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <meta name="theme-color" content="#c9786e">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -107,6 +109,12 @@ $user = htmlspecialchars($_SESSION['user_name'] ?? 'Chef');
                             </select>
                         </div>
                     </div>
+                    
+                    <div style="margin-bottom: 15px; margin-top: 5px;">
+                        <label class="field-label">Cover Image</label>
+                        <input type="file" id="recipe-image" class="field" accept="image/jpeg, image/png, image/webp">
+                    </div>
+
                     <button class="btn-rose" onclick="saveRecipe()"><i class="bi bi-save"></i> Save Recipe</button>
                 </div>
                 <div class="panel">
@@ -180,6 +188,9 @@ $user = htmlspecialchars($_SESSION['user_name'] ?? 'Chef');
             </div>
         </div>
         <div class="modal-body">
+            
+            <img id="modal-cover-image" src="" style="width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; display: none;">
+
             <div class="modal-grid">
                 <div>
                     <div class="modal-time-badge"><i class="bi bi-stopwatch"></i> <span id="modal-time">—</span></div>
