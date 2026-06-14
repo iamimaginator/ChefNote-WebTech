@@ -489,20 +489,27 @@ input:-webkit-autofill:focus, input:-webkit-autofill:active {
 .w-full { width: 100%; }
 .gap-sm { gap: 8px; }
 
-/* ── Light Theme ── */
+/* ── Warm Earth / Bakery Light Theme ── */
 body.light {
-    --bg: #F5F5F3;
-    --sidebar: #EAEAE7;
-    --surface: #FFFFFF;
-    --surface-hover: #F0F0ED;
-    --border: rgba(0,0,0,0.08);
-    --border-green: rgba(0,0,0,0.1);
-    --text: #1A1A1A;
-    --text-soft: #6B6B6B;
-    --text-muted: rgba(0,0,0,0.2);
-    --rose: #B8665E;
-    --rose-light: rgba(184,102,94,0.12);
-    --rose-glow: rgba(184,102,94,0.06);
+    /* Rich, creamy latte and warm dough backgrounds */
+    --bg: #EAE0D5; 
+    --sidebar: #DDCBB8; 
+    --surface: #F4EBE1; 
+    --surface-hover: #EAE0D5; 
+
+    /* Warm toasted borders */
+    --border: rgba(94, 64, 40, 0.12); 
+    --border-green: rgba(94, 64, 40, 0.18); 
+
+    /* Espresso text for high contrast and readability */
+    --text: #2B1E16; 
+    --text-soft: #634C3F; 
+    --text-muted: rgba(43, 30, 22, 0.35); 
+
+    /* Deep terracotta/spiced rose accent */
+    --rose: #9A4C42; 
+    --rose-light: rgba(154, 76, 66, 0.12); 
+    --rose-glow: rgba(154, 76, 66, 0.08);
 }
 body.light .btn-close { filter: none; }
 body.light .kitchen-title-input { color: var(--text); }
