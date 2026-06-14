@@ -12,7 +12,7 @@ $user = htmlspecialchars($_SESSION['user_name'] ?? 'Chef');
     <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22ChefNote%22%2C%22short_name%22%3A%22ChefNote%22%2C%22start_url%22%3A%22.%2Findex.php%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23c9786e%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
     <meta name="theme-color" content="#c9786e">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="app.css?v=2">
 </head>
 <body onload="initApp()">
 
